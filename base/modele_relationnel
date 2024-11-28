@@ -1,0 +1,33 @@
+Modèle relationnel
+
+
+Classement ( idc, rang, portee, nom, #idt )
+Classement_Equipe ( #idc, rang )
+Contient ( #ide, #idc )
+En_Lien ( #idt 1, #idt 2 )
+Equipe ( ide, nom )
+Est_Lie ( #idc 1, #idc 2 )
+Est_Liee ( #idt, #niveau, #idp )
+Individuel ( #idc, rang )
+Joue ( #idp, #idj, score, couleur_pion )
+Joueur ( idj, nom, prenom, pseudo, date_nais, email, nb_Parties, #ide )
+Partie ( idp, date_Partie, horaire_Partie, duree, c1, c2, c3, c4, c5, c6, c7, c8, c9, c_10, c_11, c_12, nom, prenom, pseudo, etat, date_naiss, email, equipe, cumul_points_cartes, rang_arrivee, nb_joueurs_partie, score_final_partie, état, strategie, id_p )
+Phase ( #idt, niveau, a_joué, est_qualifié )
+Se_Classe ( #idj, #idc, #idt, a_joue, est_qualifie )
+Tournoi ( idt, nom 1, phase, nom 2, date_Deb, date_Fin )
+
+
+
+Modèle 2
+
+Carte ( id_c, niveau, image, points, couleur, valeur, sens, #id_Co )
+COMPOSE ( idl, #num_T )
+Contrainte ( id_Co, couleur )
+Effectue ( #idj, idl, rang, couleur, valeur )
+Est_Compose ( #id_p, #id_c )
+Joueur ( idj, nom, prenom, pseudo, date_nais, email, nb_Parties )
+Partie ( idp, date_Partie, horaire_Partie, duree, c1, c2, c3, c4, c5, c6, c7, c8, c9, c_10, c_11, c_12, nom, prenom, pseudo, etat, date_naiss, email, equipe, cumul_points_cartes, rang_arrivee, nb_joueurs_partie, score_final_partie, état, strategie, #id_p )
+Plateau ( id_p, taille )
+Se_Compose ( #idp, #num_T )
+Tente_Validation ( #num_T, #id_c, #idj, nb_Tentative )
+Tour ( num_T, num_L, carte_a_valider, de1, de2, de3, de4, de5, de6, main_nb_bleu, main_nb_jaune, main_nb_rouge )
