@@ -1,45 +1,77 @@
-# BDW Projet
-<br />
+# BDW Projet - Jeu de Cyclisme Stratégique
 
-Le principe du jeu est le suivant : chaque joueur est un cycliste qui doit arriver le premier au bout du parcours qui est composé de 12 cartes. Pour avancer sur une case, il faut que le joueur réalise la combinaison de dés demandée sur la carte. Pour cela, chaque joueur dispose de 6 dés de couleur bleue, 6 dés de couleur jaune et 6 dés de couleur rouge. À chaque tour, le joueur choisit 6 dés parmi les 18 dés de couleurs pour essayer de valider une ou plusieurs cases en au plus 3 lancers. Différentes stratégies peuvent être mises en place en fonction
-du nombre de cartes que le joueur souhaite valider en un tour.
+Bienvenue dans le projet **BDW** ! Ce projet est un jeu en ligne où des joueurs incarnent des cyclistes dans une course stratégique basée sur des lancers de dés et des combinaisons de cartes. Développé dans le cadre d'un travail académique, ce jeu combine une interface web intuitive avec une gestion backend via une base de données SQL.
 
+## Principe du Jeu
 
+Le principe du jeu est simple mais stratégique : chaque joueur est un cycliste qui doit être le premier à atteindre la fin d’un parcours composé de **12 cartes**. Pour avancer sur une case, le joueur doit réaliser la combinaison de dés spécifiée par la carte correspondante. Chaque joueur dispose de :
 
-## Le code et l'organisation des fichiers
-<br />
-Les fichiers sont organisés de la façon suivante:
-<br />
+- **6 dés bleus**
+- **6 dés jaunes**
+- **6 dés rouges**
 
-- **vues**       : Dossier où sont stockés les fichiers pour l'apparence du
-                    sit web
+À chaque tour, le joueur sélectionne **6 dés** parmi ces 18 disponibles et a droit à un maximum de **3 lancers** pour tenter de valider une ou plusieurs cartes. La stratégie réside dans le choix des dés et le nombre de cartes à valider par tour, offrant une expérience de jeu riche et variée.
 
-- **static**       : Dossier contenant les fichiers pour les initialisations du menu
-                     de la tête de la page web  et le pied de la page 
+## Objectifs du Projet
 
-- **img**      :Contient les images pour décorer le site web
+- **Développer une application web interactive** : Permettre aux joueurs de configurer une partie, jouer, et consulter des statistiques.
+- **Gérer une base de données** : Stocker les informations des joueurs, des parties, et des plateaux.
+- **Proposer une interface utilisateur claire** : Avec des éléments graphiques (cartes, dés, pions) pour une immersion visuelle.
 
-- **controleurs**     : les fichiers contenats les blocs php associés à leurs vues
+---
 
-- **modele**     : contient le fichier modele avec les fonctions php
+## Organisation des Fichiers
 
-- **ressource graphique**   : Répertoire contenant tout ce qui est necessaire pour l'affichage
-                              des éléments graphique du site que ça soit les dés ou les cartes 
-                              du plateau
+Le projet est structuré en plusieurs dossiers pour une organisation claire et modulaire :
 
-- **modele**     : contient les elements lié a la base de donnée sql et mocodo
+- **`vues/`**  
+  Contient les fichiers PHP/HTML responsables de l’apparence et de l’interactivité du site web. Chaque vue est associée à une page spécifique (ex. : configuration des joueurs, affichage du plateau, statistiques).
 
+- **`static/`**  
+  Répertoire pour les fichiers statiques du site, comme les initialisations du **menu de navigation** (header) et du **pied de page** (footer). Ces éléments assurent une cohérence visuelle sur toutes les pages.
 
-## Equipe
-<br />
+- **`img/`**  
+  Stocke les images décoratives utilisées pour embellir l’interface utilisateur (ex. : logos, arrière-plans, icônes).
+
+- **`controleurs/`**  
+  Contient les fichiers PHP qui gèrent la logique métier associée à chaque vue. Ces contrôleurs traitent les données envoyées par les formulaires et interagissent avec le modèle pour les requêtes SQL.
+
+- **`modele/`**  
+  Répertoire clé contenant le fichier `modele.php`, qui regroupe toutes les fonctions PHP pour interagir avec la base de données (connexion, insertions, requêtes, etc.). Il inclut également les fichiers liés au schéma SQL (ex. : scripts Mocodo).
+
+- **`ressources_graphiques/`**  
+  Dossier dédié aux éléments visuels du jeu, tels que :
+  - Les **images des dés** (rouges, bleus, jaunes).
+  - Les **cartes du plateau** (départ, arrivée, cartes intermédiaires).
+  - Les **pions** représentant les joueurs.  
+  Ces ressources sont essentielles pour l’affichage dynamique du jeu.
+
+---
+
+## Prérequis
+
+Pour exécuter ce projet localement, vous aurez besoin de :
+
+- **Serveur Web** : Apache ou Nginx (ex. : via XAMPP, WAMP, ou MAMP).
+- **PHP** : Version 7.4 ou supérieure.
+- **MySQL** : Pour la gestion de la base de données.
+- **Navigateur Web** : Compatible avec HTML5 et CSS3 (ex. : Chrome, Firefox).
+
+### Installation
+
+1. **Cloner le Projet** :
+   ```bash
+   git clone <URL-du-dépôt>
+   cd BDW-Projet
 
 ```
-id du projet: 33218
 
-Ba Cheikh
-p2109987
+ID du projet : 33218
 
-BAH MAMADOU 
-p2107491
+- Ba Cheikh  
+  Matricule : p2109987  
+
+- Bah Mamadou  
+  Matricule : p2107491
 
 ```
