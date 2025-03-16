@@ -28,40 +28,41 @@
                 "Top 5 des joueurs qui ont joué le plus de parties" => $pseudo
             ];
 
-            // Fonction pour afficher un tableau de résultats
-            function displayTable($title, $query) {
+            // Fonction pour afficher une statistique
+            function displayStat($title, $query) {
                 $resultat_requete = executer_une_requete($query);
                 echo '<tr>';
                 echo '<td>' . $title . ' :</td>';
                 echo '<td><div class="resultat_requete">';
-                
+
                 if (is_array($resultat_requete)) {
                     echo '<table class="table_resultat">';
                     echo '<thead><tr>';
                     foreach ($resultat_requete['schema'] as $att) {
-                        echo '<th>' . htmlspecialchars($att['nom']) . '</th>';
+                        echo '<th>' . $att['nom'] . '</th>';
                     }
                     echo '</tr></thead>';
                     echo '<tbody>';
                     foreach ($resultat_requete['instances'] as $row) {
                         echo '<tr>';
                         foreach ($row as $valeur) {
-                            echo '<td>' . htmlspecialchars($valeur) . '</td>';
+                            echo '<td>' . $valeur . '</td>';
                         }
                         echo '</tr>';
                     }
                     echo '</tbody></table>';
                 } else {
-                    $message_details = "Erreur lors de la récupération des données.";
-                    echo '<p class="notification">' . htmlspecialchars($message_details) . '</p>';
+                    global $message_details;
+                    echo '<p class="notification">' . $message_details . 'TOOT</p>';
                 }
+
                 echo '</div></td>';
                 echo '</tr>';
             }
 
             // Afficher chaque statistique
             foreach ($stats as $title => $query) {
-                displayTable($title, $query);
+                displayStat($title, $query);
             }
             ?>
         </table>
