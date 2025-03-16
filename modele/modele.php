@@ -1,430 +1,264 @@
 <?php
 
 ////////////////////////////////////////////////////////////////////////
-///////    Gestion de la connxeion   ///////////////////////////////////
+///////    Gestion de la connexion   ///////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-/**
- * Initialise la connexion à la base de données courante (spécifiée selon constante 
- *	globale SERVEUR, UTILISATEUR, MOTDEPASSE, BDD)			
- */
-function open_connection_DB()
-{
-	global $connexion;
-
-	$connexion = mysqli_connect(SERVEUR, UTILISATEUR, MOTDEPASSE, BDD);
-	if (mysqli_connect_errno()) {
-		printf("Échec de la connexion : %s\n", mysqli_connect_error());
-		exit();
-	}
-} //il vérifie lui même i la connection a réussi et pour se connecter il utili
-
-/**
- *  	Ferme la connexion courante
- * */
-function close_connection_DB()
-{ //le controleur sert à avoir accès à toutes les tables
-	global $connexion;
-
-	mysqli_close($connexion);
+function open_connection_DB() {
+    global $connexion;
+    $connexion = mysqli_connect(SERVEUR, UTILISATEUR, MOTDEPASSE, BDD);
+    if (mysqli_connect_errno()) {
+        die("Échec de la connexion : " . mysqli_connect_error());
+    }
+    mysqli_set_charset($connexion, "utf8"); // Assurer l'encodage UTF-8
 }
 
+function close_connection_DB() {
+    global $connexion;
+    if ($connexion) {
+        mysqli_close($connexion);
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 ///////   Accès au dictionnaire       ///////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-
-/**array
- *  Retourne la liste des tables définies dans la base de données courantes (BDD)
- * */
-function get_tables()
-{
-	global $connexion;
-
-	$requete = "SELECT table_name FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA LIKE '" . BDD . "'";
-
-	$res = mysqli_query($connexion, $requete);
-	$instances = mysqli_fetch_all($res, MYSQLI_ASSOC); //fonction mysqli pour recup valeurs des instances
-	return $instances;
+function get_tables() {
+    global $connexion;
+    $requete = "SELECT table_name FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '" . BDD . "'";
+    $res = mysqli_query($connexion, $requete);
+    if (!$res) {
+        return [];
+    }
+    return mysqli_fetch_all($res, MYSQLI_ASSOC);
 }
 
-
-/**
- *  Retourne les statistiques sur la base de données courante
- * */
-function get_statistiques()
-{
-	//TODO
-
-	return null;
+function get_statistiques() {
+    // TODO: Implémenter si nécessaire
+    return null;
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///////    Informations (structure et contenu) d'une table    //////////
 ////////////////////////////////////////////////////////////////////////
 
-/**
- *  Retourne le détail des infos sur une table ex1.2
- * */
-function get_infos($typeVue, $nomTable)
-{
-	global $connexion;
-
-	switch ($typeVue) {
-		case 'schema':
-			return get_infos_schema($nomTable);
-			break;
-		case 'data':
-			return get_infos_instances($nomTable);
-			break;
-		default:
-			return null;
-	}
+function get_infos($typeVue, $nomTable) {
+    global $connexion;
+    switch ($typeVue) {
+        case 'schema':
+            return get_infos_schema($nomTable);
+        case 'data':
+            return get_infos_instances($nomTable);
+        default:
+            return null;
+    }
 }
 
-/**
- * Retourne le détail sur le schéma de la table
- */
-function get_infos_schema($nomTable)
-{
-	global $connexion;
+function get_infos_schema($nomTable) {
+    global $connexion;
+    $requete = "SELECT * FROM $nomTable LIMIT 0"; // LIMIT 0 pour éviter de charger les données
+    $res = mysqli_query($connexion, $requete);
+    if (!$res) {
+        return null;
+    }
 
-	// récupération des informations sur la table (schema + instance)
-	$requete = "SELECT * FROM $nomTable";
-	$res = mysqli_query($connexion, $requete); //c'est celui là qui le permets
-
-	// construction du schéma qui sera composé du nom de l'attribut et de son type	
-	$schema = array(array('nom' => 'nom_attribut'), array('nom' => 'type_attribut'), array('nom' => 'clé'));
-
-	// récupération des valeurs associées au nom et au type des attributs
-	$metadonnees = mysqli_fetch_fields($res);
-
-	$infos_att = array();
-	foreach ($metadonnees as $att) {
-		//var_dump($att);
-
-		$is_in_pk = ($att->flags & MYSQLI_PRI_KEY_FLAG) ? 'PK' : '';
-		$type = convertir_type($att->{'type'});
-
-		array_push($infos_att, array('nom' => $att->{'name'}, 'type' => $type, 'cle' => $is_in_pk));
-	}
-
-	return array('schema' => $schema, 'instances' => $infos_att); //le premier tableau contient les schémas le deuxieme les instances
-
+    $schema = [
+        ['nom' => 'nom_attribut'],
+        ['nom' => 'type_attribut'],
+        ['nom' => 'clé']
+    ];
+    $metadonnees = mysqli_fetch_fields($res);
+    $infos_att = [];
+    foreach ($metadonnees as $att) {
+        $is_in_pk = ($att->flags & MYSQLI_PRI_KEY_FLAG) ? 'PK' : '';
+        $type = convertir_type($att->type);
+        $infos_att[] = ['nom' => $att->name, 'type' => $type, 'cle' => $is_in_pk];
+    }
+    return ['schema' => $schema, 'instances' => $infos_att];
 }
 
-function get_infos_requete($getRequete)
-{
-	global $connexion;
+function get_infos_instances($nomTable) {
+    global $connexion;
+    $requete = "SELECT * FROM $nomTable";
+    $res = mysqli_query($connexion, $requete);
+    if (!$res) {
+        return null;
+    }
 
-
-	$res = $getRequete;
-
-	// extraction des informations sur le schéma à partir du résultat précédent
-	$iarraynfos_atts = mysqli_fetch_fields($res);
-
-	// filtrage des information du schéma pour ne garder que le nom de l'attribut
-	$schema = array();
-	$infos_atts = array();
-	foreach ($infos_atts as $att) {
-		array_push($schema, array('nom' => $att->{'name'})); // syntaxe objet permettant de récupérer la propriété 'name' du de l'objet descriptif de l'attribut courant
-	}
-
-	// récupération des données (instances) de la table
-	$instances = mysqli_fetch_all($res, MYSQLI_ASSOC);
-
-	// renvoi d'un tableau contenant les informations sur le schéma (nom d'attribut) et les n-uplets
-	return array('schema' => $schema, 'instances' => $instances);
+    $schema = [];
+    $infos_atts = mysqli_fetch_fields($res);
+    foreach ($infos_atts as $att) {
+        $schema[] = ['nom' => $att->name];
+    }
+    $instances = mysqli_fetch_all($res, MYSQLI_ASSOC);
+    return ['schema' => $schema, 'instances' => $instances];
 }
 
-/**
- * Retourne les instances de la table
- */
-function get_infos_instances($nomTable)
-{
-	global $connexion;
-
-	// récupération des informations sur la table (schema + instance)
-	$requete = "SELECT * FROM $nomTable";
-	$res = mysqli_query($connexion, $requete);
-
-	// extraction des informations sur le schéma à partir du résultat précédent
-	$iarraynfos_atts = mysqli_fetch_fields($res);
-
-	// filtrage des information du schéma pour ne garder que le nom de l'attribut
-	$schema = array();
-	foreach ($infos_atts as $att) {
-		array_push($schema, array('nom' => $att->{'name'})); // syntaxe objet permettant de récupérer la propriété 'name' du de l'objet descriptif de l'attribut courant
-	}
-
-	// récupération des données (instances) de la table
-	$instances = mysqli_fetch_all($res, MYSQLI_ASSOC);
-
-	// renvoi d'un tableau contenant les informations sur le schéma (nom d'attribut) et les n-uplets
-	return array('schema' => $schema, 'instances' => $instances);
-}
-
-
-function convertir_type($code)
-{
-	switch ($code) {
-		case 1:
-			return 'BOOL/TINYINT';
-		case 2:
-			return 'SMALLINT';
-		case 3:
-			return 'INTEGER';
-		case 4:
-			return 'FLOAT';
-		case 5:
-			return 'DOUBLE';
-		case 7:
-			return 'TIMESTAMP';
-		case 8:
-			return 'BIGINT/SERIAL';
-		case 9:
-			return 'MEDIUMINT';
-		case 10:
-			return 'DATE';
-		case 11:
-			return 'TIME';
-		case 12:
-			return 'DATETIME';
-		case 13:
-			return 'YEAR';
-		case 16:
-			return 'BIT';
-		case 246:
-			return 'DECIMAL/NUMERIC/FIXED';
-		case 252:
-			return 'BLOB/TEXT';
-		case 253:
-			return 'VARCHAR/VARBINARY';
-		case 254:
-			return 'CHAR/SET/ENUM/BINARY';
-		default:
-			return '?';
-	}
+function convertir_type($code) {
+    $types = [
+        1 => 'BOOL/TINYINT', 2 => 'SMALLINT', 3 => 'INTEGER', 4 => 'FLOAT', 5 => 'DOUBLE',
+        7 => 'TIMESTAMP', 8 => 'BIGINT/SERIAL', 9 => 'MEDIUMINT', 10 => 'DATE', 11 => 'TIME',
+        12 => 'DATETIME', 13 => 'YEAR', 16 => 'BIT', 246 => 'DECIMAL/NUMERIC/FIXED',
+        252 => 'BLOB/TEXT', 253 => 'VARCHAR/VARBINARY', 254 => 'CHAR/SET/ENUM/BINARY'
+    ];
+    return $types[$code] ?? '?';
 }
 
 ////////////////////////////////////////////////////////////////////////
 ///////    Traitement de requêtes                             //////////
 ////////////////////////////////////////////////////////////////////////
 
-/**
- * Retourne le résultat (schéma et instances) de la requ$ete $requete
- * */
-function executer_une_requete($requete)
-{
-	global $connexion;
-	$resultat = mysqli_query($connexion, $requete);
+function executer_une_requete($requete) {
+    global $connexion;
+    $resultat = mysqli_query($connexion, $requete);
+    if (!$resultat) {
+        return null;
+    }
 
-
-	return get_infos_requete($resultat);
-}
-function executer_une_table($requete)
-{
-	global $connexion;
-	$resultat = mysqli_query($connexion, $requete);
-}
-
-
-//fonction pour inserer la partie dans la base 
-//on définit l'état C comme en cours et l'état T comme terminée
-function insert_dans_partie(
-	$duree,
-	$c1,
-	$c2,
-	$c3,
-	$c4,
-	$c5,
-	$c6,
-	$c7,
-	$c8,
-	$c9,
-	$c10,
-	$c11,
-	$c12,
-	$idj,
-	$nom,
-	$prenom,
-	$pseudo,
-	$date_naiss,
-	$email,
-	$cumul_points_cartes,
-	$rang_arrivee,
-	$nb_joueurs_partie,
-	$score_final_partie,
-	$etat,
-	$strategie,
-	$id_p
-) {
-	foreach ($idPartieMax['instances'] as $row) {
-		foreach ($row as $valeur) { // pour parcourir chaque valeur de n-uplets
-
-			$idPartieMax = $valeur;
-		}
-	}
-	//on recupère la date et heure courante avec une fonction prédéfinie par sql
-	$date = "SELECT CURRENT_DATE()";
-	$heure = "SELECT CURRENT_TIME";
-	$date = executer_une_requete($date);
-	$heure = executer_une_requete($heure);
-
-	$idPartieMax++;
-	$partie = "INSERT INTO Partie (idp,date_Partie,Heure_Partie,duree,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,idj
-    			,nom,prenom,pseudo,date_naiss,email,cumul_points_cartes,rang_arrivee,nb_joueurs_partie,score_final_partie,etat,strategie,id_p) VALUES
-    ('$idPartieMax','$date','$heure',$duree,$c1,$c2,$c3,$c4,$c5,$c6,$c7,$c8,$c9,$c10,$c11,$c12,$idj
-    			,'$nom','$prenom','$pseudo','$date_naiss','$email',$cumul_points_cartes,$rang_arrivee,$nb_joueurs_partie,$score_final_partie,'$etat','$strategie',$id_p)";
-
-	executer_une_table($partie);
-}
-//inserer un joueur dans la base
-function insert_dans_joueur($nom, $prenom, $pseudo, $date_naiss, $email)
-{
-	$maxJoueur = "SELECT MAX(idj) FROM Joueur";
-	$maxJoueur = executer_une_requete($maxJoueur);
-
-	foreach ($maxJoueur['instances'] as $row) {
-		foreach ($row as $valeur) { // pour parcourir chaque valeur de n-uplets
-
-			$maxJoueur = $valeur;
-		}
-	}
-	$maxJoueur++;
-	$joueurs = "INSERT INTO Joueur (idj, nom, prenom, pseudo, date_naiss, email) VALUES ($maxJoueur,'$nom','$prenom','$pseudo','$date_naiss','$email')";
-	executer_une_table($joueurs);
-
-	$prepare = mysqli_prepare($connexion, $joueurs);
-	$res2 = mysqli_stmt_execute($prepare);
+    $schema = [];
+    $infos_atts = mysqli_fetch_fields($resultat);
+    foreach ($infos_atts as $att) {
+        $schema[] = ['nom' => $att->name];
+    }
+    $instances = mysqli_fetch_all($resultat, MYSQLI_ASSOC);
+    return ['schema' => $schema, 'instances' => $instances];
 }
 
-function insert_dans_plateau($nb_vert, $nb_rouge, $nb_jaune, $nb_noir)
-{
-	$taille = $nb_vert + $nb_rouge + $nb_jaune + $nb_noir;
-	$idplat = "SELECT MAX(id_p) FROM Plateau";
-	executer_une_requete($idplat);
-	foreach ($idplat['instances'] as $row) {
-		foreach ($row as $valeur) { // pour parcourir chaque valeur de n-uplets
-
-			$idplat = $valeur;
-		}
-	}
-	$idplat = $idplat++;
-	$plateau = "INSERT INTO Plateau (id_p,taille) VALUES
-    ($idplat,$taille)";
-	executer_une_table($plateau);
+function executer_une_table($requete) {
+    global $connexion;
+    $resultat = mysqli_query($connexion, $requete);
+    return $resultat !== false; // Retourne true si succès, false sinon
 }
 
+////////////////////////////////////////////////////////////////////////
+///////    Fonctions d'Insertion                              //////////
+////////////////////////////////////////////////////////////////////////
 
+function insert_dans_partie($duree, $c1, $c2, $c3, $c4, $c5, $c6, $c7, $c8, $c9, $c10, $c11, $c12, 
+                           $idj, $nom, $prenom, $pseudo, $date_naiss, $email, $cumul_points_cartes, 
+                           $rang_arrivee, $nb_joueurs_partie, $score_final_partie, $etat, $strategie, $id_p) {
+    global $connexion;
 
-//fonction qui va prendre un carte au hasard selon sa couleur
-function getCarte($couleur)
-{
-	$requeteMin = "SELECT MIN(id_c) FROM Carte WHERE niveau = '$couleur'";
-	$requeteMax = "SELECT MAX(id_c) FROM Carte WHERE niveau = '$couleur'";
-	$requeteMin = executer_une_requete($requeteMin);
-	$requeteMax = executer_une_requete($requeteMax);
+    // Récupérer l'ID maximum de Partie
+    $idPartieMaxReq = executer_une_requete("SELECT MAX(idp) AS max_id FROM Partie");
+    $idPartieMax = $idPartieMaxReq['instances'][0]['max_id'] ?? 0;
+    $idPartieMax++;
 
-	//on recupere la valeur minimum et maximum pour un rand plus tard
-	foreach ($requeteMin['instances'] as $row) {
-		foreach ($row as $valeur) {
+    // Récupérer date et heure actuelles
+    $dateReq = executer_une_requete("SELECT CURRENT_DATE() AS date");
+    $heureReq = executer_une_requete("SELECT CURRENT_TIME() AS heure");
+    $date = $dateReq['instances'][0]['date'];
+    $heure = $heureReq['instances'][0]['heure'];
 
-			$min = $valeur;
-		}
-	}
+    // Échapper les valeurs pour éviter les injections SQL
+    $nom = mysqli_real_escape_string($connexion, $nom);
+    $prenom = mysqli_real_escape_string($connexion, $prenom);
+    $pseudo = mysqli_real_escape_string($connexion, $pseudo);
+    $date_naiss = mysqli_real_escape_string($connexion, $date_naiss);
+    $email = mysqli_real_escape_string($connexion, $email);
+    $etat = mysqli_real_escape_string($connexion, $etat);
+    $strategie = mysqli_real_escape_string($connexion, $strategie);
 
-	foreach ($requeteMax['instances'] as $row) {
-		foreach ($row as $valeur) {
+    $requete = "INSERT INTO Partie (idp, date_Partie, Heure_Partie, duree, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, 
+                                   idj, nom, prenom, pseudo, date_naiss, email, cumul_points_cartes, rang_arrivee, 
+                                   nb_joueurs_partie, score_final_partie, etat, strategie, id_p) 
+                VALUES ('$idPartieMax', '$date', '$heure', '$duree', '$c1', '$c2', '$c3', '$c4', '$c5', '$c6', '$c7', '$c8', 
+                        '$c9', '$c10', '$c11', '$c12', '$idj', '$nom', '$prenom', '$pseudo', '$date_naiss', '$email', 
+                        '$cumul_points_cartes', '$rang_arrivee', '$nb_joueurs_partie', '$score_final_partie', '$etat', 
+                        '$strategie', '$id_p')";
 
-			$max = $valeur;
-		}
-	}
-
-
-	$indice = rand($min, $max);
-	//le LIMIT c'est juste pour être sur
-	$carte = "SELECT image FROM Carte WHERE id_c = $indice LIMIT 1";
-	$carte = executer_une_requete($carte);
-
-
-	foreach ($carte['instances'] as $row) {
-		foreach ($row as $valeur) {
-
-			$carte = $valeur;
-		}
-	}
-	//boucle de selection des cartes dans la base
-	//avec une fonction qui prend un tableau et la quantité de cartes à mettre dedans avec une requete sql et la fonction rand
-
-
-
-
-
-	return $carte;
+    return executer_une_table($requete);
 }
-//l'id en fonction de l'url de la carte
-function recuperer_id_carte($image)
-{
-	$carte = "SELECT id_c FROM Carte WHERE image = '$image'";
-	executer_une_requete($carte);
-	foreach ($carte['instances'] as $row) {
-		foreach ($row as $valeur) {
 
-			$carte = $valeur;
-		}
-	}
+function insert_dans_joueur($nom, $prenom, $pseudo, $date_naiss, $email) {
+    global $connexion;
 
-	return $carte;
+    // Récupérer l'ID maximum de Joueur
+    $maxJoueurReq = executer_une_requete("SELECT MAX(idj) AS max_id FROM Joueur");
+    $maxJoueur = $maxJoueurReq['instances'][0]['max_id'] ?? 0;
+    $maxJoueur++;
+
+    // Échapper les valeurs
+    $nom = mysqli_real_escape_string($connexion, $nom);
+    $prenom = mysqli_real_escape_string($connexion, $prenom);
+    $pseudo = mysqli_real_escape_string($connexion, $pseudo);
+    $date_naiss = mysqli_real_escape_string($connexion, $date_naiss);
+    $email = mysqli_real_escape_string($connexion, $email);
+
+    $requete = "INSERT INTO Joueur (idj, nom, prenom, pseudo, date_naiss, email) 
+                VALUES ('$maxJoueur', '$nom', '$prenom', '$pseudo', '$date_naiss', '$email')";
+    
+    return executer_une_table($requete);
 }
-//le nombre de points que donne une carte
-function points_carte($image)
-{
-	$carte = "SELECT points FROM Carte WHERE image = '$image'";
-	executer_une_requete($carte);
-	foreach ($carte['instances'] as $row) {
-		foreach ($row as $valeur) {
 
-			$carte = $valeur;
-		}
-	}
+function insert_dans_plateau($nb_vert, $nb_jaune, $nb_bleu, $nb_noir) {
+    global $connexion;
 
-	return $carte;
+    $taille = $nb_vert + $nb_jaune + $nb_bleu + $nb_noir;
+    $idPlatReq = executer_une_requete("SELECT MAX(id_p) AS max_id FROM Plateau");
+    $idPlat = $idPlatReq['instances'][0]['max_id'] ?? 0;
+    $idPlat++;
+
+    $requete = "INSERT INTO Plateau (id_p, taille) VALUES ('$idPlat', '$taille')";
+    return executer_une_table($requete);
 }
-//retourne le nombre de joueurs en jeu
-function nombre_de_joueurs()
-{
-	$nb_joueurs = "SELECT COUNT(idj) FROM Joueur j JOIN Partie p ON  p.idj = j.idj AND p.etat = 'C'";
-	$nb_joueurs = executer_une_requete($nb_joueurs);
-	foreach ($nb_joueurs['instances'] as $row) {
-		foreach ($row as $valeur) {
 
-			$nb_joueurs = $valeur;
-		}
-	}
+function getCarte($couleur) {
+    global $connexion;
 
-	return $nb_joueurs;
+    $couleur = mysqli_real_escape_string($connexion, $couleur);
+    $requeteMin = executer_une_requete("SELECT MIN(id_c) AS min_id FROM Carte WHERE niveau = '$couleur'");
+    $requeteMax = executer_une_requete("SELECT MAX(id_c) AS max_id FROM Carte WHERE niveau = '$couleur'");
+    $min = $requeteMin['instances'][0]['min_id'] ?? 0;
+    $max = $requeteMax['instances'][0]['max_id'] ?? 0;
+
+    if ($min == 0 || $max == 0) {
+        return null; // Pas de cartes disponibles
+    }
+
+    $indice = rand($min, $max);
+    $carteReq = executer_une_requete("SELECT image FROM Carte WHERE id_c = '$indice' LIMIT 1");
+    return $carteReq['instances'][0]['image'] ?? null;
 }
-//pour lancer les dés aléatoirement
-function lancer_de($couleur)
-{
-	//on va initialiser trois tableaux de dés avec les images de dés et les tirer aléatoirement
-	$rouge = array("deR1.png", "deR2.png", "deR3.png", "deR4.png", "deR5.png", "deR6.png");
-	$bleu = array("deB1.png", "deB2.png", "deB3.png", "deB4.png", "deB5.png", "deB6.png");
-	$jaune = array("deJ1.png", "deJ2.png", "deJ3.png", "deJ4.png", "deJ5.png", "deJ6.png");
 
-	//on mélange aléatoirement et on mets la premiere la valeur dans la variable
-	if ($couleur == "bleu") {
-		shuffle($bleu);
-		$resultat = $bleu[0];
-	} else if ($couleur == "rouge") {
-		shuffle($rouge);
-		$resultat = $rouge[0];
-	} else {
-		shuffle($jaune);
-		$resultat = $jaune[0];
-	}
+function recuperer_id_carte($image) {
+    global $connexion;
 
-	return $resultat;
+    $image = mysqli_real_escape_string($connexion, $image);
+    $carteReq = executer_une_requete("SELECT id_c FROM Carte WHERE image = '$image'");
+    return $carteReq['instances'][0]['id_c'] ?? null;
+}
+
+function points_carte($image) {
+    global $connexion;
+
+    $image = mysqli_real_escape_string($connexion, $image);
+    $carteReq = executer_une_requete("SELECT points FROM Carte WHERE image = '$image'");
+    return $carteReq['instances'][0]['points'] ?? 0;
+}
+
+function nombre_de_joueurs() {
+    $nbJoueursReq = executer_une_requete("SELECT COUNT(idj) AS nb FROM Joueur j JOIN Partie p ON p.idj = j.idj AND p.etat = 'C'");
+    return $nbJoueursReq['instances'][0]['nb'] ?? 0;
+}
+
+function lancer_de($couleur) {
+    $rouge = ["deR1.png", "deR2.png", "deR3.png", "deR4.png", "deR5.png", "deR6.png"];
+    $bleu = ["deB1.png", "deB2.png", "deB3.png", "deB4.png", "deB5.png", "deB6.png"];
+    $jaune = ["deJ1.png", "deJ2.png", "deJ3.png", "deJ4.png", "deJ5.png", "deJ6.png"];
+
+    switch ($couleur) {
+        case "rouge":
+            shuffle($rouge);
+            return $rouge[0];
+        case "bleu":
+            shuffle($bleu);
+            return $bleu[0];
+        case "jaune":
+            shuffle($jaune);
+            return $jaune[0];
+        default:
+            return null;
+    }
 }
