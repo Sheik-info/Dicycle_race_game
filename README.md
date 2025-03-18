@@ -57,12 +57,7 @@ Pour exécuter ce projet localement, vous aurez besoin de :
 - **MySQL** : Pour la gestion de la base de données.
 - **Navigateur Web** : Compatible avec HTML5 et CSS3 (ex. : Chrome, Firefox).
 
-### Installation
 
-1. **Cloner le Projet** :
-   ```bash
-   git clone <URL-du-dépôt>
-   cd BDW-Projet
 
 ```
 
