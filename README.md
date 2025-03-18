@@ -63,10 +63,8 @@ Pour exécuter ce projet localement, vous aurez besoin de :
 
 ID du projet : 33218
 
-- Ba Cheikh  
-  Matricule : p2109987  
+- Ba Cheikh   
 
 - Bah Mamadou  
-  Matricule : p2107491
 
 ```
